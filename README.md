@@ -19,24 +19,9 @@
 
 ---
 
-## Table of Contents
+## Releases
 
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [Commands](#commands)
-  - [katich init](#katich-init)
-  - [katich context build](#katich-context-build)
-  - [katich review latest](#katich-review-latest)
-  - [katich review diff](#katich-review-diff)
-  - [katich review full](#katich-review-full)
-  - [katich review file](#katich-review-file)
-  - [katich doctor](#katich-doctor)
-  - [katich version](#katich-version)
-- [Output Formats](#output-formats)
-- [Example Outputs](#example-outputs)
-- [Best Practices](#best-practices)
-- [Troubleshooting](#troubleshooting)
+Download the latest release from the [Releases page](https://github.com/kodehash/katichai-dist/releases).
 
 ---
 
@@ -57,6 +42,7 @@ sudo mv katich /usr/local/bin/
 ```bash
 curl -L https://github.com/kodehash/katichai-dist/releases/latest/download/katich_darwin_arm64.tar.gz -o katich.tar.gz
 tar -xzf katich.tar.gz
+mv katich-darwin-arm64 katich
 sudo mv katich /usr/local/bin/
 ```
 
@@ -72,15 +58,6 @@ tar -xzf katich.tar.gz
 sudo mv katich /usr/local/bin/
 ```
 
-### Option 2: Build from Source
-
-```bash
-git clone https://github.com/kodehash/katichai.git
-cd katichai
-go build -o katich cmd/katich/main.go
-sudo mv katich /usr/local/bin/
-```
-
 ### Verify Installation
 
 ```bash
@@ -90,8 +67,8 @@ katich version
 Expected output:
 ```
 katich version v1.0.0-alpha.2
-Git commit: abc1234
-Build date: 2024-01-15
+Git commit: XXXXXXX
+Build date: 2025-12-31
 ```
 
 ---
@@ -107,7 +84,7 @@ Build date: 2024-01-15
    ```bash
    katich init
    ```
-
+By default OpenAI is set as the LLM provider.
 3. **Add your OpenAI API key** to `.katich/config.yaml`:
    ```yaml
    llm:
@@ -144,8 +121,8 @@ llm:
   max_input_tokens: 20000
 
 embeddings:
-  provider: local
-  model: jina-code-v2
+  provider: openai
+  model: text-embedding-3-small
 
 review:
   generate_html: true
@@ -185,6 +162,10 @@ llm:
   provider: openai
   model: gpt-4
   api_key: "sk-..."
+
+embeddings:
+  provider: openai
+  model: text-embedding-3-small
 ```
 
 **Anthropic**
@@ -193,6 +174,11 @@ llm:
   provider: anthropic
   model: claude-3-5-sonnet-20241022
   api_key: "sk-ant-..."
+
+embeddings:
+  provider: openai
+  model: text-embedding-3-small
+  api_key: "sk-..."  # OpenAI API key for embeddings
 ```
 
 **Ollama (Local)**
@@ -201,6 +187,10 @@ llm:
   provider: ollama
   model: llama3
   base_url: http://localhost:11434
+
+embeddings:
+  provider: local
+  model: jina-code-v2
 ```
 
 ---
@@ -283,6 +273,17 @@ Configuration files found:
   • go.mod
   • docker-compose.yml
 ```
+
+---
+
+## Review Commands Overview
+
+Katich provides several review commands for different use cases:
+
+- **`katich review latest`** - Review the latest commit by comparing it with the previous commit
+- **`katich review diff <range>`** - Review changes between two commits or branches (e.g., `main..feature-branch`)
+- **`katich review full`** - Perform a comprehensive review of the entire repository (all tracked files)
+- **`katich review file <path>`** - Review a specific file for code quality, duplicates, and AI-generated patterns
 
 ---
 
