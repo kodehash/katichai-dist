@@ -39,6 +39,7 @@ Download the latest release for your platform:
 ```bash
 curl -L https://github.com/kodehash/katichai-dist/releases/latest/download/katich_darwin_amd64.tar.gz -o katich.tar.gz
 tar -xzf katich.tar.gz
+mv katich-darwin-amd64 katich
 sudo mv katich /usr/local/bin/
 ```
 
@@ -59,6 +60,7 @@ xattr -d com.apple.quarantine /usr/local/bin/katich
 ```bash
 curl -L https://github.com/kodehash/katichai-dist/releases/latest/download/katich_linux_amd64.tar.gz -o katich.tar.gz
 tar -xzf katich.tar.gz
+mv katich-linux-amd64 katich
 sudo mv katich /usr/local/bin/
 ```
 
