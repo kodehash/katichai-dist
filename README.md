@@ -1,5 +1,9 @@
 # Katich AI
 
+<div align="center">
+  <img src="katich-ai-logo.png" alt="Katich AI Logo" width="200">
+</div>
+
 **Context-aware AI code review tool**
 
 ```
@@ -27,7 +31,7 @@ Download the latest release from the [Releases page](https://github.com/kodehash
 
 ## Installation
 
-### Option 1: Pre-built Binaries (Recommended)
+Pre-built Binaries
 
 Download the latest release for your platform:
 
