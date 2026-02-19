@@ -94,6 +94,7 @@ By default OpenAI is set as the LLM provider.
      provider: openai
      model: gpt-4
      api_key: "sk-your-api-key-here"
+     tokens_per_minute: 40000  # Match to your API tier (0 = disabled)
    ```
 
 4. **Build context** (optional but recommended)
@@ -194,6 +195,15 @@ llm:
 embeddings:
   provider: local
   model: jina-code-v2
+```
+
+### Review Settings
+```
+review:
+  generate_html: true
+  html_output_path: .katich/reports
+  generate_gfm: false         # Set to true to also generate a GFM .md report
+  gfm_output_path: .katich/reports
 ```
 
 ---
