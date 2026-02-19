@@ -131,6 +131,8 @@ embeddings:
 review:
   generate_html: true
   html_output_path: .katich/reports
+  generate_gfm: false         # Set to true to also generate a GFM .md report
+  gfm_output_path: .katich/reports
 
 analysis:
   max_function_length: 50
