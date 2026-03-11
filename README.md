@@ -1,7 +1,3 @@
-<div align="center">
-  <img src="katich-ai-logo.png" alt="Katich AI Logo" width="200">
-</div>
-
 # Katich AI
 
 **Context-aware AI code review tool**
@@ -13,22 +9,36 @@
 ██╔═██╗ ██╔══██║   ██║   ██║██║     ██╔══██║    ██╔══██║██║
 ██║  ██╗██║  ██║   ██║   ██║╚██████╗██║  ██║    ██║  ██║██║
 ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝
-                                                           
-                                                             
-              Context-aware AI code review tool
+             context aware AI code review tool
 ```
 
 ---
 
-## Releases
+## Table of Contents
 
-Download the latest release from the [Releases page](https://github.com/kodehash/katichai-dist/releases).
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Commands](#commands)
+  - [katich init](#katich-init)
+  - [katich context build](#katich-context-build)
+  - [katich review latest](#katich-review-latest)
+  - [katich review diff](#katich-review-diff)
+  - [katich review full](#katich-review-full)
+  - [katich review file](#katich-review-file)
+  - [katich doctor](#katich-doctor)
+  - [katich version](#katich-version)
+- [Output Formats](#output-formats)
+- [Example Outputs](#example-outputs)
+- [Best Practices](#best-practices)
+- [Rate Limiting (TPM)](#rate-limiting-tpm)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Installation
 
-Pre-built Binaries
+### Option 1: Pre-built Binaries (Recommended)
 
 Download the latest release for your platform:
 
@@ -36,7 +46,6 @@ Download the latest release for your platform:
 ```bash
 curl -L https://github.com/kodehash/katichai-dist/releases/latest/download/katich_darwin_amd64.tar.gz -o katich.tar.gz
 tar -xzf katich.tar.gz
-mv katich-darwin-amd64 katich
 sudo mv katich /usr/local/bin/
 ```
 
@@ -44,7 +53,6 @@ sudo mv katich /usr/local/bin/
 ```bash
 curl -L https://github.com/kodehash/katichai-dist/releases/latest/download/katich_darwin_arm64.tar.gz -o katich.tar.gz
 tar -xzf katich.tar.gz
-mv katich-darwin-arm64 katich
 sudo mv katich /usr/local/bin/
 ```
 
@@ -57,7 +65,15 @@ xattr -d com.apple.quarantine /usr/local/bin/katich
 ```bash
 curl -L https://github.com/kodehash/katichai-dist/releases/latest/download/katich_linux_amd64.tar.gz -o katich.tar.gz
 tar -xzf katich.tar.gz
-mv katich-linux-amd64 katich
+sudo mv katich /usr/local/bin/
+```
+
+### Option 2: Build from Source
+
+```bash
+git clone https://github.com/kodehash/katichai.git
+cd katichai
+go build -o katich cmd/katich/main.go
 sudo mv katich /usr/local/bin/
 ```
 
@@ -69,9 +85,9 @@ katich version
 
 Expected output:
 ```
-katich version v1.0.0-alpha.X
-Git commit: XXXXXXX
-Build date: 2025-12-31
+katich version v1.0.0-alpha.2
+Git commit: abc1234
+Build date: 2024-01-15
 ```
 
 ---
@@ -87,14 +103,13 @@ Build date: 2025-12-31
    ```bash
    katich init
    ```
-By default OpenAI is set as the LLM provider.
+
 3. **Add your OpenAI API key** to `.katich/config.yaml`:
    ```yaml
    llm:
      provider: openai
      model: gpt-4
      api_key: "sk-your-api-key-here"
-     tokens_per_minute: 40000  # Match to your API tier (0 = disabled)
    ```
 
 4. **Build context** (optional but recommended)
@@ -111,54 +126,60 @@ By default OpenAI is set as the LLM provider.
 
 ## Configuration
 
-Katich uses a configuration file at `.katich/config.yaml`. Run `katich init` to create it with defaults.
+Katich uses a configuration file at `.katich/config.yaml`. Run `katich init` to create it with defaults. For **all possible options** with descriptions, copy or reference **`.katich/config.example.yaml`** from the repository.
 
-### Default Configuration
+### Key options
+
+| Section | Key | Purpose |
+|--------|-----|---------|
+| **llm** | provider, model, api_key | Which LLM to use (openai, anthropic, ollama) |
+| **llm** | max_input_tokens | Override model context window (0 = auto-detect) |
+| **llm** | tokens_per_minute | TPM rate limit for chunked reviews (0 = disabled) |
+| **embeddings** | provider, model, api_key | Local (Ollama) or API (OpenAI) for embeddings |
+| **context** | source | `local` (use .katich/) or `remote` (fetch from Git) |
+| **context.remote** | branch, directory | Branch and directory for remote context |
+| **review** | generate_html, generate_gfm | Output HTML and/or GFM reports |
+| **analysis** | sampling.* | Max files, context lines, skip tests, etc. |
+
+### Minimal examples
 
 ```yaml
-project_name: your-project-name
-
+# OpenAI
 llm:
   provider: openai
-  model: gpt-4
-  api_key: ""  # Add your OpenAI API key here
-  max_input_tokens: 20000
+  model: gpt-4o
+  api_key: "sk-..."
+  tokens_per_minute: 90000
 
-embeddings:
-  provider: openai
-  model: text-embedding-3-small
+# Ollama (local)
+llm:
+  provider: ollama
+  model: llama3
+  base_url: http://localhost:11434
 
-review:
-  generate_html: true
-  html_output_path: .katich/reports
-  generate_gfm: false         # Set to true to also generate a GFM .md report
-  gfm_output_path: .katich/reports
-
-analysis:
-  max_function_length: 50
-  complexity_threshold: 10
-  similarity_threshold: 0.70
-  min_function_lines: 5
-  duplicate_threshold: 0.85
-  ignore_trivial_patterns: true
-  sampling:
-    enabled: true
-    max_files: 50
-    context_lines: 2
-    skip_generated: true
-    skip_tests: false
-    adaptive_budget: true
+# Context: use remote repo for context/embeddings
+context:
+  source: remote
+  remote:
+    branch: main
+    directory: katich-ai-context
 ```
 
 ### Environment Variables
 
 You can override configuration using environment variables:
 
-- `KATICH_LLM_API_KEY` - LLM API key
-- `OPENAI_API_KEY` - OpenAI API key (if provider is openai)
-- `ANTHROPIC_API_KEY` - Anthropic API key (if provider is anthropic)
-- `KATICH_API_SERVER_URL` - API server URL for key fetching
-- `KATICH_API_TOKEN` - API server authentication token
+- `KATICH_LLM_API_KEY` — LLM API key
+- `OPENAI_API_KEY` — OpenAI API key (if provider is openai)
+- `ANTHROPIC_API_KEY` — Anthropic API key (if provider is anthropic)
+- `KATICH_EMBEDDINGS_API_KEY` — Embeddings API key (else falls back to OPENAI_API_KEY)
+- `KATICH_API_SERVER_URL` — API server URL for key fetching
+- `KATICH_API_TOKEN` — API server authentication token
+
+### Context source (local vs remote)
+
+- **`context.source: local`** (default) — Use `context.json` and `embeddings.json` from the local `.katich/` directory. Run `katich context build` to create/update them.
+- **`context.source: remote`** — Fetch both files from your Git remote (e.g. origin). Review commands will `git fetch` and read from `context.remote.branch` and `context.remote.directory` (default `main` and `katich-ai-context`). No GitHub token is required if you can push/pull with normal Git. Use `katich context build --publish` to push updated context from another clone.
 
 ### LLM Providers
 
@@ -168,10 +189,6 @@ llm:
   provider: openai
   model: gpt-4
   api_key: "sk-..."
-
-embeddings:
-  provider: openai
-  model: text-embedding-3-small
 ```
 
 **Anthropic**
@@ -180,11 +197,6 @@ llm:
   provider: anthropic
   model: claude-3-5-sonnet-20241022
   api_key: "sk-ant-..."
-
-embeddings:
-  provider: openai
-  model: text-embedding-3-small
-  api_key: "sk-..."  # OpenAI API key for embeddings
 ```
 
 **Ollama (Local)**
@@ -193,19 +205,6 @@ llm:
   provider: ollama
   model: llama3
   base_url: http://localhost:11434
-
-embeddings:
-  provider: local
-  model: jina-code-v2
-```
-
-### Review Settings
-```
-review:
-  generate_html: true
-  html_output_path: .katich/reports
-  generate_gfm: false         # Set to true to also generate a GFM .md report
-  gfm_output_path: .katich/reports
 ```
 
 ---
@@ -246,14 +245,24 @@ Analyze your codebase and build context for better reviews. This is optional but
 
 **Usage:**
 ```bash
-katich context build
+katich context build                    # Incremental (default): only changed files
+katich context build --force           # Full rebuild (ignore cache)
+katich context build --publish         # Push context.json + embeddings.json to origin
+katich context build -i                # Same as default (incremental)
+katich context build -f                # Same as --force
 ```
 
+**Flags:**
+- `--incremental`, `-i` (default: true) — Only analyze/add embeddings for files that changed since the last build on the same branch. If HEAD hasn’t changed, prints "No changes found to perform context build" and exits.
+- `--force`, `-f` — Ignore cached state and rebuild everything (context.json and embeddings).
+- `--publish` — After building, commit and push `context.json` and `embeddings.json` into the configured remote branch (e.g. `main`) under the directory from `context.remote.directory` (default `katich-ai-context`). Uses normal Git (no GitHub token required if you can push).
+
 **What it does:**
-- Analyzes all source files in the repository
+- Analyzes source files (all, or only changed when incremental)
 - Generates code metrics and complexity analysis
-- Creates embeddings for semantic code understanding
+- Creates embeddings for semantic code understanding (batches of 100 for API, with retries)
 - Saves context to `.katich/context.json` and `.katich/embeddings.json`
+- Build state (branch + commit) is stored in `.katich/.last_build_state` for incremental builds
 
 **Example Output:**
 ```
@@ -291,17 +300,6 @@ Configuration files found:
 
 ---
 
-## Review Commands Overview
-
-Katich provides several review commands for different use cases:
-
-- **`katich review latest`** - Review the latest commit by comparing it with the previous commit
-- **`katich review diff <range>`** - Review changes between two commits or branches (e.g., `main..feature-branch`)
-- **`katich review full`** - Perform a comprehensive review of the entire repository (all tracked files)
-- **`katich review file <path>`** - Review a specific file for code quality, duplicates, and AI-generated patterns
-
----
-
 ### katich review latest
 
 Review the latest commit by comparing it with the previous commit.
@@ -311,23 +309,33 @@ Review the latest commit by comparing it with the previous commit.
 katich review latest
 ```
 
+**Flags:**
+```bash
+katich review latest --html   # Force HTML report generation
+katich review latest --gfm    # Generate a GitHub Flavored Markdown report
+```
+
 **What it does:**
 - Compares the latest commit with its parent
 - Analyzes all changes in the commit
 - Generates comprehensive review report
-- Creates HTML report (if enabled)
+- Creates HTML report (if `review.generate_html: true` or `--html` flag)
+- Creates GFM report (if `review.generate_gfm: true` or `--gfm` flag)
 
 **Example Output:**
 ```
-██╗  ██╗ █████╗ ████████╗██╗ ██████╗██╗  ██╗     █████╗ ██╗
-██║ ██╔╝██╔══██╗╚══██╔══╝██║██╔════╝██║  ██║    ██╔══██╗██║
-█████╔╝ ███████║   ██║   ██║██║     ███████║    ███████║██║
-██╔═██╗ ██╔══██║   ██║   ██║██║     ██╔══██║    ██╔══██║██║
-██║  ██╗██║  ██║   ██║   ██║╚██████╗██║  ██║    ██║  ██║██║
-╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝
-                                                           
-                                                             
-              Context-aware AI code review tool
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║   ██╗  ██╗ █████╗ ████████╗██╗ ██████╗██╗  ██╗              ║
+║   ██║ ██╔╝██╔══██╗╚══██╔══╝██║██╔════╝██║  ██║              ║
+║   █████╔╝ ███████║   ██║   ██║██║     ███████║              ║
+║   ██╔═██╗ ██╔══██║   ██║   ██║██║     ██╔══██║              ║
+║   ██║  ██╗██║  ██║   ██║   ██║╚██████╗██║  ██║              ║
+║   ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝╚═╝  ╚═╝              ║
+║                                                              ║
+║              Context-aware AI code review tool              ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
 
 📊 Sampling Report:
   • Total files changed: 12
@@ -409,6 +417,12 @@ katich review diff abc1234..def5678
 
 # Compare current branch with main
 katich review diff main..HEAD
+```
+
+**Flags:**
+```bash
+katich review diff main..feature --html  # Force HTML report
+katich review diff main..feature --gfm   # Generate GFM report (ideal for PR comments)
 ```
 
 **What it does:**
@@ -614,6 +628,51 @@ Comprehensive interactive HTML report with:
 - File navigation
 - Responsive design
 
+### GitHub Flavored Markdown (GFM) Report
+
+A clean, table-based Markdown report designed to be posted directly as a GitHub PR comment or pasted into a GitHub Actions job summary. Maximum 65,000 characters.
+
+**Enable via config:**
+```yaml
+review:
+  generate_gfm: true
+  gfm_output_path: .katich/reports
+```
+
+**Enable via flag (one-off):**
+```bash
+katich review latest --gfm
+katich review diff main..feature --gfm
+```
+
+**Location:** `.katich/reports/review-YYYYMMDD-HHMMSS.md`
+
+**What's included:**
+- Overall score badge and risk level
+- File coverage summary
+- Critical issues table with GitHub file links
+- Suggestions and unnecessary complexity tables
+- Duplicate code links (URLs only, no code snippets)
+- DB/ORM query review findings
+
+**What's excluded (to keep it GitHub-friendly):**
+- No code snippets (only links in `owner/repo/blob/sha/file#Lnn` format)
+- No dashboard summary section
+- No token usage display
+- Content is truncated gracefully if it would exceed 65,000 characters
+
+**Ideal for GitHub Actions:**
+```yaml
+- name: Run Katich Review
+  run: |
+    katich review diff ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} --gfm
+    GFM_FILE=$(ls -t .katich/reports/*.md | head -1)
+    echo "## Katich AI Code Review" >> $GITHUB_STEP_SUMMARY
+    cat "$GFM_FILE" >> $GITHUB_STEP_SUMMARY
+  env:
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+```
+
 ### JSON Output
 
 Machine-readable JSON format for integration with other tools.
@@ -726,6 +785,16 @@ review:
   html_output_path: .katich/reports
 ```
 
+### 6. GFM Reports for CI/CD
+
+Enable GFM reports when running in GitHub Actions to post results directly as PR comments or job summaries:
+```yaml
+review:
+  generate_gfm: true
+  gfm_output_path: .katich/reports
+```
+Or use the `--gfm` flag for a one-off run without changing config.
+
 ### 6. Sampling Configuration
 
 Adjust sampling for your repository size:
@@ -779,6 +848,41 @@ The tool automatically focuses on security vulnerabilities. Ensure your API key 
 - Check write permissions for `.katich/reports/` directory
 - Verify disk space available
 
+### Issue: GFM report not generated
+
+**Solution:**
+- Ensure `review.generate_gfm: true` in config, or pass the `--gfm` flag
+- Check write permissions for `.katich/reports/` directory
+
+### Issue: "429 rate limit" / "tokens per minute exceeded"
+
+**Solution:**
+- Set `llm.tokens_per_minute` in config to match your API tier's TPM limit
+- Katich will automatically pace chunk batches to stay within the limit
+- If already set, lower the value slightly to add a buffer
+- Set to `0` to disable scheduling (useful for high-tier API accounts)
+
+```yaml
+llm:
+  tokens_per_minute: 90000  # Lower if still hitting rate limits
+```
+
+### Issue: "context deadline exceeded" / "Client.Timeout exceeded" when generating embeddings
+
+**Cause:** The OpenAI embeddings API call timed out (e.g. many files in one go or slow network).
+
+**Solution:**
+- Katich now sends embeddings in **batches of 100** with a **2-minute timeout** per batch and **up to 3 retries** with backoff. Updating to the latest release should resolve most timeouts.
+- If it still happens: check network and OpenAI status; use a smaller repo or run `katich context build --incremental` so only changed files need new embeddings.
+- If embeddings fail, the tool continues without them (reviews still run, but without semantic similarity).
+
+### Issue: "This model's maximum context length is X tokens... you requested Y"
+
+**Cause:** The model’s total context window was exceeded (input + output).
+
+**Solution:**
+- Katich uses **optimistic chunking**: every review is chunked and each chunk gets a dynamic `max_tokens`, so this error should not occur with current versions. If you still see it, set an explicit limit in config so chunking uses the correct window: `llm.max_input_tokens: <your_model_limit>` (e.g. 8192 for older GPT-4). Ensure you’re on the latest release.
+
 ### Issue: "No issues found" but you expect issues
 
 **Possible causes:**
@@ -807,8 +911,7 @@ Or allow in System Settings > Privacy & Security.
 
 ### CI/CD Integration
 
-Add to your CI pipeline:
-
+**Basic usage:**
 ```yaml
 # GitHub Actions example
 - name: Run Katich Review
@@ -816,6 +919,28 @@ Add to your CI pipeline:
     katich review diff ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
   env:
     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+```
+
+**With GFM report posted to job summary:**
+```yaml
+- name: Run Katich Review
+  run: |
+    katich review diff ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} --gfm
+    GFM_FILE=$(ls -t .katich/reports/*.md | head -1)
+    echo "## Katich AI Code Review" >> $GITHUB_STEP_SUMMARY
+    cat "$GFM_FILE" >> $GITHUB_STEP_SUMMARY
+  env:
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+```
+
+**With TPM rate limiting for shared API keys:**
+```yaml
+- name: Run Katich Review
+  run: |
+    katich review diff ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} --gfm
+  env:
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    # tokens_per_minute is set in .katich/config.yaml; lower it if CI hits rate limits
 ```
 
 ### Custom Configuration
@@ -828,6 +953,12 @@ katich review latest --config .katich/production.yaml
 
 # Force HTML generation
 katich review latest --html
+
+# Generate GFM report (GitHub Flavored Markdown)
+katich review latest --gfm
+
+# Combine flags
+katich review diff main..feature --html --gfm
 ```
 
 ### API Server Integration
@@ -842,6 +973,51 @@ api_server:
 ```
 
 The API server should return API keys based on `project_name` and `provider` from your config.
+
+---
+
+---
+
+## Token limits and chunking
+
+### Optimistic chunking
+
+Every review runs through the **chunked** pipeline. There is no single large request that can exceed the model’s context window: each chunk gets a dynamic `max_tokens` so input + output stay within the limit. This avoids "context length exceeded" errors regardless of diff size.
+
+### Model context window
+
+Context window size is **auto-detected** from the model name (e.g. GPT-4 8K, GPT-4o 128K, Claude 200K, Llama 3.1 128K). To override (e.g. for an unknown or custom model), set in config:
+
+```yaml
+llm:
+  max_input_tokens: 8192  # 0 = auto-detect (default)
+```
+
+### Rate limiting (TPM)
+
+Tokens Per Minute (TPM) is the rate limit enforced by LLM API providers. Katich schedules chunks into 60-second windows so the total tokens per minute stay under your limit:
+
+1. **Token estimation** — Each chunk’s token cost (input + estimated output) is calculated.
+2. **Window assignment** — Chunks are packed into windows under `tokens_per_minute`.
+3. **Pacing** — After each window, Katich waits out the remainder of the 60-second slot before the next batch.
+4. **Concurrency** — Within a window, up to 3 requests run in parallel.
+
+```yaml
+llm:
+  tokens_per_minute: 90000  # Set to 0 to disable TPM limiting
+```
+
+Provider limits: **OpenAI** https://platform.openai.com/settings/organization/limits — **Anthropic** https://console.anthropic.com/settings/limits
+
+### What you’ll see
+
+```
+📦 Split into 6 chunks for parallel review
+🤖 Reviewing chunk 1/6...
+🤖 Reviewing chunk 2/6...
+⏳ Window 1/2 done. Waiting 47s before next batch to respect TPM limit...
+🔀 Normalizing 2 chunk summaries into a unified summary...
+```
 
 ---
 
