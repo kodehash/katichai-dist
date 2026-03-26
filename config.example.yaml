@@ -1,0 +1,126 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Katich AI — Full configuration reference
+# ═══════════════════════════════════════════════════════════════════════════════
+# Copy to .katich/config.yaml and adjust. Options you don't need can be omitted;
+# defaults are applied automatically. Use this file as a reference for all keys.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Project identifier (optional). Often auto-set from Git remote during `katich init`.
+# Used by the API server (if enabled) to return the correct API key for this repo.
+# project_name: my-project
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LLM (review model)
+# ─────────────────────────────────────────────────────────────────────────────
+llm:
+  # Provider: openai | anthropic | ollama (local)
+  provider: openai
+
+  # API key.
+  # Prefer env vars in CI: OPENAI_API_KEY, ANTHROPIC_API_KEY, or KATICH_LLM_API_KEY
+  api_key: ""
+
+  # Model name. Examples: gpt-4o, gpt-4, claude-3-5-sonnet-20241022, llama3, llama3.1
+  model: gpt-4o
+
+  # For provider: ollama — base URL of your local server
+  # base_url: http://localhost:11434
+
+  # Override detected context window (tokens). Leave 0 to auto-detect from model name.
+  # Set only if your model isn't recognized or you want a stricter limit.
+  max_input_tokens: 0
+
+  # Tokens per minute (TPM) rate limit. Katich schedules chunked reviews to stay under this.
+  # Set to your API tier limit; use 0 to disable TPM scheduling.
+  tokens_per_minute: 90000
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Embeddings (semantic similarity and context)
+# ─────────────────────────────────────────────────────────────────────────────
+embeddings:
+  # Model name:
+  # - local: jina-code-v2, nomic-embed-text, bge-code, etc.
+  # - api:   text-embedding-3-small (OpenAI)
+  model: text-embedding-3-small
+
+  # Provider: local | api
+  # - local: uses a local embeddings model (typically via Ollama)
+  # - api:   uses OpenAI embeddings API
+  provider: api
+
+  # Required when provider is api.
+  # Environment overrides:
+  # - KATICH_EMBEDDINGS_API_KEY (preferred)
+  # - OPENAI_API_KEY (fallback)
+  api_key: ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Context source (where to load context.json and embeddings.json)
+# ─────────────────────────────────────────────────────────────────────────────
+# Build context with: katich context build (incremental, default)
+#   --incremental / -i  only changed files (default; same-branch only)
+#   --force / -f        full rebuild (ignore .last_build_state)
+#   --publish           push context.json + embeddings.json to remote (branch/directory below)
+context:
+  # local = use .katich/ on disk (default). remote = fetch from Git origin.
+  source: local
+
+  remote:
+    # Branch to fetch from when source: remote (e.g. main, develop)
+    branch: main
+    # Directory in that branch containing context.json and embeddings.json
+    directory: katich-ai-context
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Review output
+# ─────────────────────────────────────────────────────────────────────────────
+review:
+  generate_html: true
+  html_output_path: .katich/reports
+
+  # GFM = GitHub Flavored Markdown; good for PR comments and Actions summary
+  generate_gfm: false
+  gfm_output_path: .katich/reports
+
+  # AI-generated code detection. Off by default; enable with --ai-detect flag or here.
+  detect_ai_code: false
+
+  # Generate a copy-pasteable fix prompt from review findings.
+  # Users can paste it into Cursor, Antigravity, or any AI coding assistant.
+  # Disable with --no-fix-prompt flag or set to false here.
+  generate_fix_prompt: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Static analysis & sampling
+# ─────────────────────────────────────────────────────────────────────────────
+analysis:
+  max_function_length: 50
+  complexity_threshold: 10
+  similarity_threshold: 0.70
+
+  # Similarity / duplication detection
+  min_function_lines: 5
+  duplicate_threshold: 0.85
+  ignore_trivial_patterns: true
+
+  sampling:
+    enabled: true
+    max_files: 50
+    context_lines: 2
+    skip_generated: true
+    skip_tests: false
+    adaptive_budget: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Centralized API server (optional)
+# ─────────────────────────────────────────────────────────────────────────────
+# When enabled, the LLM api_key is fetched from your server instead of config.
+# Recommended to use environment variables in CI:
+# - KATICH_API_SERVER_URL (required when enabled)
+# - KATICH_API_TOKEN (required when enabled; overrides token below)
+api_server:
+  enabled: false
+  # url can be set here or via KATICH_API_SERVER_URL (env var wins)
+  url: ""
+  # token can be set here or via KATICH_API_TOKEN (env var wins)
+  token: ""
